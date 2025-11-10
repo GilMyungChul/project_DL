@@ -1,0 +1,246 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>TravelAgent | {% block title %}여행의 모든 것{% endblock %}</title>
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+
+    <!-- Favicons -->
+    <link href="{% static 'img/favicon.png' %}" rel="icon">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Raleway:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Vendor CSS Files -->
+    <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/aos/aos.css" rel' %}="stylesheet">
+    <link href="{% static 'vendor/swiper/swiper-bundle.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/glightbox/css/glightbox.min.css' %}" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <!-- Main CSS File -->
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+
+    {% block map_style %}
+    {% endblock %}
+
+    {% block diary_style %}
+    {% endblock %}
+    
+    {% block extra_style %}
+    {% endblock %}
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: #f8fafc;
+        }
+    </style>
+
+    <!-- =======================================================
+    * Template Name: Tour
+    * Template URL: https://bootstrapmade.com/tour-bootstrap-travel-website-template/
+    * Updated: Jul 01 2025 with Bootstrap v5.3.7
+    * Author: BootstrapMade.com
+    * License: https://bootstrapmade.com/license/
+    ======================================================== -->
+</head>
+<body class="text-slate-700 ">
+
+    {% block header %}
+    <header id="header" class="header d-flex align-items-center fixed-top">
+    {% endblock %}
+        <div class="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
+
+            <a href="{% url 'main' %}" class="logo d-flex align-items-center me-auto me-xl-0">
+                <!-- Uncomment the line below if you also wish to use an image logo -->
+                <!-- <img src="assets/img/logo.webp" alt=""> -->
+                <h1 class="sitename">Travel</h1>
+            </a>
+
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    <li class="dropdown"><a href="#"><span>{% trans '언어선택' %}</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <form action="{% url 'set_language' %}" method="post">
+                                {% csrf_token %}
+
+                                {% get_current_language as CURRENT_LANG %}
+                                {% get_language_info for CURRENT_LANG as LANGUAGE_INFO %}
+    
+                                {% if CURRENT_LANG == "ko" %}
+                                    {# 현재 언어가 'ko'이고 prefix가 없는 경우, 전체 경로를 넘깁니다. #}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                {% else %}
+                                    {# 현재 언어가 'en' 또는 'es'일 경우, '/xx/' (3글자)를 제거한 경로를 넘깁니다. #}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path|slice:'3:' }}">
+                                {% endif %}
+
+
+                                <li>
+                                    <!-- 한국어 버튼 -->
+                                    <button type="submit" name="language" value="ko" class="{% if LANGUAGE_CODE == 'ko' %}active-lang{% endif %}">
+                                        🇰🇷 한국어
+                                    </button>
+                                </li>
+                                <li>
+                                    <!-- 영어 버튼 -->
+                                    <button type="submit" name="language" value="en" class="{% if LANGUAGE_CODE == 'en' %}active-lang{% endif %}">
+                                        🇺🇸 English
+                                    </button>
+                                </li>
+                                <li>
+                                    <!-- 스페인어 버튼 -->
+                                    <button type="submit" name="language" value="es" class="{% if LANGUAGE_CODE == 'es' %}active-lang{% endif %}">
+                                        🇪🇸 Español
+                                    </button>
+                                </li>
+                            </form>
+                        </ul>
+                    </li>
+                    <!-- <li><a href="{% url 'admin:index' %}">{% trans "어드민" %}</a></li> -->
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'select' %}">{% trans "AI 코스 추천" %}</a></li>
+                    <li class="dropdown"><a href="#"><span>{{ user.username }}</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="{% url 'travel:user_travel_plans' %}">{% trans "나의 여행 플랜" %}</a></li>
+                            <li><a href="{% url 'travel:diary_list' %}">{% trans "내 다이어리" %}</a></li>
+                            <li><a href="{% url 'chat' %}">{% trans "여행자 채팅" %}</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="{% url 'travel:logout' %}">{% trans "로그아웃" %}</a></li>
+                {% else %}
+                    <li><a href="{% url 'travel:login' %}">{% trans "로그인" %}</a></li>
+                    <li><a href="{% url 'travel:signup' %}">{% trans "회원가입" %}</a></li>
+                {% endif %}
+                    <!-- <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="#">Dropdown 1</a></li>
+                            <li class="dropdown"><a href="#"><span>Deep Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                                <ul>
+                                <li><a href="#">Deep Dropdown 1</a></li>
+                                <li><a href="#">Deep Dropdown 2</a></li>
+                                <li><a href="#">Deep Dropdown 3</a></li>
+                                <li><a href="#">Deep Dropdown 4</a></li>
+                                <li><a href="#">Deep Dropdown 5</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#">Dropdown 2</a></li>
+                            <li><a href="#">Dropdown 3</a></li>
+                            <li><a href="#">Dropdown 4</a></li>
+                        </ul>
+                    </li> -->
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer id="footer" class="footer position-relative dark-background">
+
+        <div class="container copyright text-center">
+            <p>© <span>Copyright</span> <strong class="px-1 sitename">TravelAgent</strong> <span>All Rights Reserved</span></p>
+        </div>
+
+    </footer>
+
+    {% for message in messages %}
+    <div id="messageModal" class="message-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3>{% trans "알림" %}</h3>
+            <div id="modalMessageBody"></div>
+            <button onclick="closeModal()">{% trans "확인" %}</button>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Scroll Top -->
+    <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+    <!-- Preloader -->
+    <div id="preloader"></div>
+
+    
+
+    <!-- Vendor JS Files -->
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'vendor/aos/aos.js' %}"></script>
+    <script src="{% static 'vendor/purecounter/purecounter_vanilla.js' %}"></script>
+    <script src="{% static 'vendor/swiper/swiper-bundle.min.js' %}"></script>
+    <script src="{% static 'vendor/isotope-layout/isotope.pkgd.min.js' %}"></script>
+    <script src="{% static 'vendor/imagesloaded/imagesloaded.pkgd.min.js' %}"></script>
+    <script src="{% static 'vendor/glightbox/js/glightbox.min.js' %}"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <!-- Main JS File -->
+    <script src="{% static 'js/main.js' %}"></script>
+
+    {% block map_scripts %}
+    <script>
+        // 팝업 관련 변수 설정
+        const modal = document.getElementById('messageModal');
+        const modalBody = document.getElementById('modalMessageBody');
+        
+        // 팝업을 닫는 함수
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        // 팝업을 여는 함수
+        function openModal(htmlContent) {
+            modalBody.innerHTML = htmlContent;
+            modal.style.display = "block";
+        }
+
+        // ⭐️ 페이지 로드 시 Django 메시지를 처리하는 핵심 로직
+        document.addEventListener('DOMContentLoaded', function() {
+            let messagesHtml = '';
+
+            // Django messages를 JavaScript로 변환하여 HTML 문자열 생성
+            {% if messages %}
+                {% for message in messages %}
+                    // 메시지 태그(error, success, info 등)에 따라 클래스 부여
+                    const tagClass = 'tag-{{ message.tags|default:"info" }}';
+                    
+                    // 메시지 내용을 안전하게 변환하여 HTML로 추가
+                    messagesHtml += `<p class="${tagClass}">{{ message|escapejs }}</p>`;
+                {% endfor %}
+
+                // 메시지가 있으면 팝업 열기
+                if (messagesHtml) {
+                    openModal(messagesHtml);
+                }
+            {% endif %}
+        });
+
+        // 팝업 바깥 영역 클릭 시 닫기
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+    {% endblock %}
+
+</body>
+</html>
