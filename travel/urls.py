@@ -8,7 +8,8 @@ app_name = "travel"
 urlpatterns = [
 
     # 여행 목록
-    path("list/", views.travel_list, name="travel_list"),
+    # path("list/", views.travel_list, name="travel_list"),
+    path("list_new/", views.travel_list_new, name="travel_list_new"),
 
     # 장소 성격 분석 LLM
     path('llm-analysis/', views.analyze_selected_places_view, name='llm_analysis'),

@@ -87,13 +87,33 @@
 
         <div>
             <label data-ko="여행 스타일" data-en="Travel Style" data-es="Estilo de viaje">여행 스타일</label>
-            <select name="travel_style" data-es-placeholder="Seleccionar estilo">
-                <option value="휴양형" data-ko="🌿 휴양형" data-en="🌿 Relax" data-es="🌿 Relajación">🌿 휴양형</option>
-                <option value="액티비티" data-ko="🏃‍♂️ 액티비티" data-en="🏃‍♂️ Adventure" data-es="🏃‍♂️ Actividad">🏃‍♂️ 액티비티</option>
-                <option value="문화탐방" data-ko="🎭 문화탐방" data-en="🎭 Culture" data-es="🎭 Exploración cultural">🎭 문화탐방</option>
-                <option value="미식" data-ko="🍽 미식" data-en="🍽 Foodie" data-es="🍽 Gastronómico">🍽 미식</option>
-                <option value="사진" data-ko="📸 사진" data-en="📸 Photography" data-es="📸 Fotografía">📸 사진</option>
-            </select>
+            
+            <div name="travel_style_group" class="travel-style-item">
+                <div>
+                    <input type="checkbox" id="style_relax" name="travel_style" value="휴양">
+                    <label for="style_relax" data-ko="🌿 휴양형" data-en="🌿 Relax" data-es="🌿 Relajación">🌿 휴양형</label><br>
+                </div>
+                
+                <div>
+                    <input type="checkbox" id="style_activity" name="travel_style" value="액티비티">
+                    <label for="style_activity" data-ko="🏃‍♂️ 액티비티" data-en="🏃‍♂️ Adventure" data-es="🏃‍♂️ Actividad">🏃‍♂️ 액티비티</label><br>
+                </div>
+                
+                <div>
+                    <input type="checkbox" id="style_culture" name="travel_style" value="문화탐방">
+                    <label for="style_culture" data-ko="🎭 문화탐방" data-en="🎭 Culture" data-es="🎭 Exploración cultural">🎭 문화탐방</label><br>
+                </div>
+                
+                <div>
+                    <input type="checkbox" id="style_foodie" name="travel_style" value="미식">
+                    <label for="style_foodie" data-ko="🍽 미식" data-en="🍽 Foodie" data-es="🍽 Gastronómico">🍽 미식</label><br>
+                </div>
+                
+                <div>
+                    <input type="checkbox" id="hotplace" name="travel_style" value="핫플레이스">
+                    <label for="hotplace" data-ko="📸 사진" data-en="📸 hotplace" data-es="📸 Fotografía">📸 핫플레이스</label>
+                </div>
+            </div>
         </div>
 
         <div>

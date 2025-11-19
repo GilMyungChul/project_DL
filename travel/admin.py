@@ -33,6 +33,7 @@ from .models import (
     ChatRoom,
     ChatReport,
     ChatMessage,
+    UserAnalysis,
 )
 
 from .services.LLM_analyzer import analyze_place_with_LLM
@@ -634,3 +635,9 @@ class UserProfileAdmin(admin.ModelAdmin):
         "sns",
         'mbti'
     )
+
+@admin.register(UserAnalysis)
+class UserAnalysisAdmin(admin.ModelAdmin):
+    list_display = ("user_profile", "gender_vector", "age_vector", "style_vector", "mbti_vector")
+    search_fields = ("user_profile", "gender_vector", "age_vector", "style_vector", "mbti_vector")
+    

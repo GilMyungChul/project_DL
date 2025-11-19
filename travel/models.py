@@ -452,7 +452,8 @@ class UserProfile(models.Model):
     age_range = models.CharField(max_length=20, blank=True)
     country = models.CharField(max_length=50, blank=True)
     languages = models.CharField(max_length=100, blank=True)
-    travel_style = models.CharField(max_length=50, blank=True)
+    # travel_style = models.CharField(max_length=50, blank=True)
+    travel_style = models.JSONField(blank=True,  default=list)
     budget = models.CharField(max_length=50, blank=True)
     smoking = models.CharField(max_length=20, blank=True)
     drinking = models.CharField(max_length=20, blank=True)
@@ -461,3 +462,19 @@ class UserProfile(models.Model):
     mbti = models.CharField(max_length=4, blank=True, null=True) 
     def __str__(self):
         return f"{self.nickname} ({self.user.username})"
+    
+# ----- 사용자 정보 벡터 모델 ------------------------------------------
+class UserAnalysis(models.Model) :
+    user_profile = models.OneToOneField(
+        UserProfile,
+        on_delete=models.CASCADE,
+        related_name="analysis"
+    )
+
+    gender_vector = models.JSONField(default=list, blank=True)
+    age_vector = models.JSONField(default=list, blank=True)
+    style_vector = models.JSONField(default=list, blank=True)
+    mbti_vector = models.JSONField(default=list, blank=True)
+
+    def __str__(self):
+        return f"UserAnalysis for {self.user_profile.nickname}"

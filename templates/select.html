@@ -36,7 +36,7 @@
             <div><span>나의 여행</span> <span class="description-title">선택</span></div>
         </div> -->
         
-        <form class="form-selects" method="post" action="{% url 'travel:travel_list' %}">
+        <form class="form-selects" method="post" action="{% url 'travel:travel_list_new' %}">
             {% csrf_token %}
             <div class="form-wrap">
                 <div class="form-block" style="width:100%;">
@@ -174,7 +174,7 @@
                             <li><input type="checkbox" name="tema" id="culture" value="culture"><label for="culture">{% trans "문화/전시" %}</label></li>
                             <li><input type="checkbox" name="tema" id="park" value="park"><label for="park">{% trans "테마파크" %}</label></li>
                             <li><input type="checkbox" name="tema" id="healing" value="healing"><label for="healing">{% trans "힐링/스파" %}</label></li>
-                            <li><input type="checkbox" name="tema" id="shopping" value="shopping"><label for="shopping">{% trans "쇼핑" %}</label></li>
+                            <li><input type="checkbox" name="tema" id="hotplace" value="hotplace"><label for="hotplace">{% trans "핫플레이스" %}</label></li>
                         </ul>
                     </div>
                 </div>

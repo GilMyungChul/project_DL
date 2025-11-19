@@ -42,13 +42,15 @@ a {text-decoration: none; color: #333;}
 .signup-container {
     background: rgba(255, 255, 255, 0.95);
     width: 90%;
-    max-width: 420px;
+    max-width: 600px;
     margin: 160px auto 80px;
     padding: 30px 40px;
     border-radius: 20px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     backdrop-filter: blur(10px);
 }
+
+.login{max-width: 420px;}
 
 .signup-container h2 {
     text-align: center;
@@ -107,3 +109,6 @@ a {text-decoration: none; color: #333;}
     gap: 8px;
     font-size: 13px;
 }
+
+.travel-style-item {display: flex; justify-content: space-between; margin-top: 5px;}
+.travel-style-item div input{width: auto;}

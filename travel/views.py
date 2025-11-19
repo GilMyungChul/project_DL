@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
-from django.db.models import Q # New import
+from django.db.models import Q ,Prefetch
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect ,get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
@@ -45,6 +45,7 @@ from .models import (
     Travel,
     PlaceAnalysis,
     UserProfile,
+    UserAnalysis,
 )
 
 from .services.diary_summarizer import summarize_diary_with_ai, generate_tags_with_ai 
@@ -59,6 +60,14 @@ from .services.recommender import (
     split_into_days,
     build_map_paths,
 )
+from .services.recommender2 import (
+    companion_to_vector,
+    theme_to_vector,
+    build_normalized_season_vector,
+    merge_theme_vectors,
+    build_final_user_vector,
+)
+from .services.user_vector import build_user_vector
 
 import logging
 logger = logging.getLogger('travelAgent')
@@ -1066,7 +1075,7 @@ def signup_view(request):
         age_range = request.POST.get("age_range")
         country = request.POST.get("country")
         languages = request.POST.get("language")  # form 필드 이름과 일치
-        travel_style = request.POST.get("travel_style")
+        travel_style = request.POST.getlist("travel_style")
         budget = request.POST.get("budget")
         smoking = request.POST.get("smoking")
         drinking = request.POST.get("drinking")
@@ -1107,6 +1116,25 @@ def signup_view(request):
                 profile.mbti = mbti
                 
                 profile.save() # UserProfile 객체 저장
+
+                # ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
+                # 5) 사용자 벡터 생성
+                user_vector = build_user_vector({
+                    "gender": gender,
+                    "age_range": age_range,
+                    "travel_style": travel_style,
+                    "mbti": mbti
+                })
+
+                # 6) UserAnalysis 생성 또는 연결
+                UserAnalysis.objects.create(
+                    user_profile=profile,
+                    gender_vector=user_vector.get("gender"),
+                    age_vector=user_vector.get("age"),
+                    style_vector=user_vector.get("style"),
+                    mbti_vector=user_vector.get("mbti"),
+                )
+                # ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
 
             # 5. 로그인 처리 및 리다이렉트
             login(request, user)
@@ -1462,3 +1490,46 @@ def matching(request):
                         print("other_plan.pk (retry):", getattr(item, "pk", None))
 
     return redirect('chat')
+
+
+def travel_list_new(request):
+    if request.method == 'POST':
+        
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ - S
+        startDate = request.POST.get("start_date")
+        endDate = request.POST.get("end_date")
+        travel = request.POST.getlist("travel_gu")
+        partner = request.POST.get("partner")
+        themes = request.POST.getlist("tema")
+
+        season_v = build_normalized_season_vector(startDate, endDate)
+        partner_v = companion_to_vector(partner)
+        themes_v = theme_to_vector(themes)
+
+        # 사용자 성향 벡터 가져오기
+        userAn = request.user.userprofile.analysis
+        # print(f"userAn ============== {userAn}")
+
+        mbti_v = userAn.mbti_vector
+        style_v = userAn.style_vector
+        age_v = userAn.age_vector
+        gender_v = userAn.gender_vector
+
+        final_thema = merge_theme_vectors(style_v, themes_v)
+         
+        user_vector = build_final_user_vector(season_v, mbti_v, partner_v, age_v, final_thema)
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ - E
+
+
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ - S
+        areas = [AREA_LABELS.get(a.lower(), a) for a in travel]
+
+        # 장소 + 장소 성격 데이터 가져오기
+        places = Place.objects.filter(city_gu__in=areas).prefetch_related(Prefetch("analyses"))
+
+        
+        print(f"places ================== {places}")
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ -E
+
+
+        return render(request, "select.html")

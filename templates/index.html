@@ -22,7 +22,7 @@
                             <p>{% trans "AI가 나에게 꼭 맞는 여행 계획을 추천해줘요" %}</p>
                         </div>
 
-                        <form class="search-form tx-center" action="{% url 'travel:travel_list' %}" method="post">
+                        <form class="search-form tx-center" action="{% url 'travel:travel_list_new' %}" method="post">
                             {% csrf_token %}
                             <div class="form-wrapper">
                                 <input type="hidden" name="search_yn" value="True" >
