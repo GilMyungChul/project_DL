@@ -2,6 +2,9 @@ from typing import Dict, List, Any
 from django.db.models import Prefetch, Q
 from travel.models import Place, PlaceAnalysis, UserProfile
 from datetime import date, datetime, timedelta
+from numpy import dot
+from numpy.linalg import norm
+
 
 # 장소 테마에 맞게 사용자 성향 및 선택 테마를 변경
 PLACE_THEME_LIST = [
@@ -11,6 +14,38 @@ PLACE_THEME_LIST = [
     "SNS/핫플레이스",
     "미식/맛집투어"
 ]
+
+# 장소 Anaylsis 에 themes_csv 값
+THEME_KEYWORDS = {
+    "힐링/휴식": [
+        "힐링", "휴식", "스파", "명상", "요가",
+        "도심 속 휴식처", "산책", "자연", "풍경", "자연경관",
+        "산책로", "자연/생태", "자연/환경", "자연체험",
+        "자연탐방", "자연/경관"
+    ],
+
+    "익스트림/액티비티": [
+        "액티비티", "레저", "익스트림", "테마파크", "모험",
+        "트레킹", "산책/운동"
+    ],
+
+    "역사/문화탐방": [
+        "문화", "전시", "역사", "전통", "박물관",
+        "전통문화", "전통/역사", "지역문화", "지역문화체험",
+        "전통/역사탐방", "지역 체험", "지역 탐방/체험"
+    ],
+
+    "SNS/핫플레이스": [
+        "핫플", "SNS", "인스타", "카페", "커피",
+        "사진", "사진찍기", "여행 사진 촬영"
+    ],
+
+    "미식/맛집투어": [
+        "맛집", "미식", "식도락", "food",
+        "지역 맛집 탐방"
+    ]
+}
+
 
 # 여행 동반자 벡터 생성
 COMPANION_TYPES = ["solo", "friends", "couple", "family"]
@@ -120,7 +155,7 @@ def build_final_user_vector(
         mbti_v,            # [8]
         partner_v,         # [4]
         age_v,             # [4]
-        theme_v            # [6]
+        theme_v            # [5]
     ):
     """
     장소 벡터(place_vector)와 동일한 구조로
@@ -140,7 +175,60 @@ def build_final_user_vector(
     # 4) 나이 (4)
     user_vector += age_v
 
-    # 5) 테마 (6)
+    # 5) 테마 (5)
     user_vector += theme_v
 
     return user_vector
+
+
+def place_theme_to_vector(theme_str):
+    if not theme_str:
+        return [0, 0, 0, 0, 0]
+
+    theme_str = theme_str.replace(" ", "")
+
+    vector = []
+
+    for theme in PLACE_THEME_LIST:
+        keywords = THEME_KEYWORDS[theme]
+        matched = any(k in theme_str for k in keywords)
+        vector.append(100 if matched else 0)
+
+    return vector
+
+
+# 장소 대한 벡터 합치기
+def build_place_vector(ana):
+
+    vector = []
+
+    # 1) 계절 (4)
+    vector += [ana.season_spring, ana.season_summer,
+               ana.season_autumn, ana.season_winter]
+
+    # 2) MBTI (8)
+    vector += [ana.mbti_E, ana.mbti_I, ana.mbti_S, ana.mbti_N,
+               ana.mbti_T, ana.mbti_F, ana.mbti_J, ana.mbti_P]
+
+    # 3) 동반자 (4)
+    vector += [ana.group_couple, ana.group_friends,
+               ana.group_family, ana.group_solo]
+
+    # 4) 나이대 (3)
+    vector += [ana.age_20s, ana.age_30s, ana.age_40s]
+
+    # 5) 테마 (문자열 → 벡터로 변환) (5)
+    theme_v = place_theme_to_vector(ana.themes_csv)
+    vector += theme_v
+
+    # print(f"장소 계절 벡터 =============== {[ana.season_spring, ana.season_summer, ana.season_autumn, ana.season_winter]}")
+    # print(f"장소 mbti 벡터 =============== {[ana.mbti_E, ana.mbti_I, ana.mbti_S, ana.mbti_N, ana.mbti_T, ana.mbti_F, ana.mbti_J, ana.mbti_P]}")
+    # print(f"장소 동반자 벡터 =============== {[ana.group_couple, ana.group_friends, ana.group_family, ana.group_solo]}")
+    # print(f"장소 나이 벡터 =============== {[ana.age_20s, ana.age_30s, ana.age_40s]}")
+    # print(f"장소 테마 벡터 =============== {theme_v}")
+
+    return vector
+
+
+def cosine_similarity(v1, v2):
+    return dot(v1, v2) / (norm(v1) * norm(v2) + 1e-8)

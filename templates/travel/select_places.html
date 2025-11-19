@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static %}
+{% load travel_filters %}
+{% load i18n %}
+{% block title %}여행 에이전트{% endblock %}
+
+{% block extra_style %}
+<style>
+    h2 { margin-bottom: 20px; font-size: 28px; font-weight: 700; text-align: center; }
+    .category-container { margin-bottom: 40px; }
+    .category-title { font-size: 22px; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+    .places-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+    .place-card { background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #ddd; position: relative; transition: 0.25s; cursor: pointer; }
+    .place-card:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.1); transform: translateY(-3px); }
+    .thumb { width: 100%; height: 150px; object-fit: cover; }
+    .place-content { padding: 15px; }
+    .place-name { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .place-info { font-size: 14px; color: #555; margin-bottom: 10px; }
+    .rating { color: #f5b50a; font-size: 16px; font-weight: 600; }
+    .place-checkbox { position: absolute; right: 12px; top: 12px; transform: scale(1.5); z-index: 10; }
+    .submit-btn { margin-top: 40px; width: 100%; background: #6c63ff; color: white; font-size: 18px; font-weight: 600; border: none; padding: 18px 0; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+    .submit-btn:hover { background: #5548f7; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <!-- Page Title -->
+    <div class="page-title dark-background" data-aos="fade" style="background-image: url({% static 'img/travel/showcase-8.webp' %});">
+        <div class="container position-relative">
+            <h1>{% trans "추천된 장소를 선택" %}</h1>
+            <p>{% trans "사용자의 여행 스타일을 반영한 장소를 추천해드요" %}</p>
+            <nav class="breadcrumbs">
+                <ol>
+                    <li><a href="index.html">{% trans "Home" %}</a></li>
+                    <li class="current">{% trans "추천된 장소를 선택" %}</li>
+                </ol>
+            </nav>
+        </div>
+    </div><!-- End Page Title -->
+
+    
+    <section class="cont-wrap">
+
+        <form method="POST" action="{% url 'travel:travel_list_new' %}">
+            {% csrf_token %}
+
+            <!-- 🍽 음식점 -->
+            <div class="category-container">
+                <div class="category-title"><span>🍽</span> 음식점 추천 Top10</div>
+                <div class="places-grid">
+                    {% for p in top_res %}
+                    <label class="place-card">
+                        <input type="checkbox" class="place-checkbox" name="selected_places" value="{{ p.id }}">
+
+                        <div class="place-content">
+                            <div class="place-name">{{ p.name }}</div>
+                            <div class="place-info">{{ p.address|default:"주소 정보 없음" }}</div>
+                            <div class="rating">⭐ {{ p.rating|default:"0.0" }}</div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 🎡 관광지 -->
+            <div class="category-container">
+                <div class="category-title"><span>🎡</span> 관광지 추천 Top10</div>
+                <div class="places-grid">
+                    {% for p in top_act %}
+                    <label class="place-card">
+                        <input type="checkbox" class="place-checkbox" name="selected_places" value="{{ p.id }}">
+
+                        <div class="place-content">
+                            <div class="place-name">{{ p.name }}</div>
+                            <div class="place-info">{{ p.address|default:"주소 정보 없음" }}</div>
+                            <div class="rating">⭐ {{ p.rating|default:"0.0" }}</div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 🏨 숙소 -->
+            <div class="category-container">
+                <div class="category-title"><span>🏨</span> 숙소 추천 Top10</div>
+                <div class="places-grid">
+                    {% for p in top_acc %}
+                    <label class="place-card">
+                        <input type="checkbox" class="place-checkbox" name="selected_places" value="{{ p.id }}">
+
+                        <div class="place-content">
+                            <div class="place-name">{{ p.name }}</div>
+                            <div class="place-info">{{ p.address|default:"주소 정보 없음" }}</div>
+                            <div class="rating">⭐ {{ p.rating|default:"0.0" }}</div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">
+                선택한 장소로 여행 플랜 만들기 🚀
+            </button>
+        </form>
+    </section>
+
+{% endblock %}

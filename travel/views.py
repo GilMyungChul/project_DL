@@ -66,6 +66,8 @@ from .services.recommender2 import (
     build_normalized_season_vector,
     merge_theme_vectors,
     build_final_user_vector,
+    build_place_vector,
+    cosine_similarity,
 )
 from .services.user_vector import build_user_vector
 
@@ -1495,7 +1497,7 @@ def matching(request):
 def travel_list_new(request):
     if request.method == 'POST':
         
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ - S
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- S
         startDate = request.POST.get("start_date")
         endDate = request.POST.get("end_date")
         travel = request.POST.getlist("travel_gu")
@@ -1516,20 +1518,83 @@ def travel_list_new(request):
         gender_v = userAn.gender_vector
 
         final_thema = merge_theme_vectors(style_v, themes_v)
+
+        # print(f"사용자 계절 벡터 =============== {season_v}")
+        # print(f"사용자 mbti 벡터 =============== {mbti_v}")
+        # print(f"사용자 동반자 벡터 =============== {partner_v}")
+        # print(f"사용자 나이 벡터 =============== {age_v}")
+        # print(f"사용자 테마 벡터 =============== {final_thema}")
          
         user_vector = build_final_user_vector(season_v, mbti_v, partner_v, age_v, final_thema)
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ - E
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- E
 
 
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ - S
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- S
         areas = [AREA_LABELS.get(a.lower(), a) for a in travel]
 
         # 장소 + 장소 성격 데이터 가져오기
         places = Place.objects.filter(city_gu__in=areas).prefetch_related(Prefetch("analyses"))
 
         
-        print(f"places ================== {places}")
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ -E
+        # 액티비티
+        attractions = places.filter(category="attractions")
+        attractions_results = []
+
+        for place in attractions:
+            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
+            if not ana:
+                continue
+
+            place_vector = build_place_vector(ana)
+            score = cosine_similarity(user_vector, place_vector)
+            attractions_results.append((place, score))
 
 
-        return render(request, "select.html")
+        # 숙소
+        accommodations = places.filter(category="accommodations")
+        accommodations_results = []
+
+        for place in accommodations:
+            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
+            if not ana:
+                continue
+
+            place_vector = build_place_vector(ana)
+            score = cosine_similarity(user_vector, place_vector)
+            accommodations_results.append((place, score))
+
+
+        # 음식점
+        restaurants = places.filter(category="restaurants")
+        restaurants_results = []
+
+        for place in restaurants:
+            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
+            if not ana:
+                continue
+
+            place_vector = build_place_vector(ana)
+            score = cosine_similarity(user_vector, place_vector)
+            restaurants_results.append((place, score))
+
+        # 액티비티 상위 10개
+        attractions_results.sort(key=lambda x: x[1], reverse=True)
+        # att_top10 = attractions_results[:10]
+        att_top10 = [p for p, s in attractions_results[:10]]
+
+        # 음식점 상위 10개
+        restaurants_results.sort(key=lambda x: x[1], reverse=True)
+        res_top10 = [p for p, s in restaurants_results[:10]]
+
+        # 숙소 상위 10개
+        accommodations_results.sort(key=lambda x: x[1], reverse=True)        
+        acc_top10 = [p for p, s in accommodations_results[:10]]
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- E
+
+        return render(request, "travel/select_places.html", {
+            "top_act" : att_top10,
+            "top_res" : res_top10,
+            "top_acc" : acc_top10,
+            "startDate" : startDate,
+            "endDate" : endDate,
+        })
