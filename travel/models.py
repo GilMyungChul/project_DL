@@ -460,6 +460,7 @@ class UserProfile(models.Model):
     sns = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
     mbti = models.CharField(max_length=4, blank=True, null=True) 
+    seasons = models.JSONField(blank=True,  default=list)
     def __str__(self):
         return f"{self.nickname} ({self.user.username})"
     
@@ -471,6 +472,7 @@ class UserAnalysis(models.Model) :
         related_name="analysis"
     )
 
+    season_vector = models.JSONField(default=list, blank=True)
     gender_vector = models.JSONField(default=list, blank=True)
     age_vector = models.JSONField(default=list, blank=True)
     style_vector = models.JSONField(default=list, blank=True)

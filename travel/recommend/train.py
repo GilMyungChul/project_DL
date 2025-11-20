@@ -157,10 +157,9 @@ def build_place_vector(ana):
     # 2) MBTI (8)
     vector += [ana.mbti_E, ana.mbti_I, ana.mbti_S, ana.mbti_N,
                ana.mbti_T, ana.mbti_F, ana.mbti_J, ana.mbti_P]
-
-    # 3) 동반자 (4)
-    vector += [ana.group_couple, ana.group_friends,
-               ana.group_family, ana.group_solo]
+    
+    # 3) 성별 (2)
+    vector += [ana.gender_male, ana.gender_female]
 
     # 4) 나이대 (3)
     vector += [ana.age_20s, ana.age_30s, ana.age_40s]
@@ -174,22 +173,20 @@ def build_place_vector(ana):
 # ------------------------------
 # 유저 성향 벡터 합치기
 # ------------------------------
-def build_final_user_vector(userV):
+def build_final_user_vector(season_v, mbti_v, gender_v, age_v, style_v):
     
-    mbti_v = userV.mbti_vector
-    style_v = userV.style_vector
-    age_v = userV.age_vector
-    gender_v = userV.gender_vector
-
     user_vector = []
+
+    # 1) 계절 (4)
+    user_vector += season_v
 
     # 2) MBTI (8)
     user_vector += mbti_v
 
-    # 3) 성별 (4)
+    # 3) 성별 (2)
     user_vector += gender_v
 
-    # 4) 나이 (4)
+    # 4) 나이 (3)
     user_vector += age_v
 
     # 5) 테마 (5)
@@ -212,7 +209,14 @@ def train_recommend_model(request):
         print("❌ 유저가 존재하지 않음.")
         return False
 
-    user_vector = build_final_user_vector(sample_user.userprofile.analysis)
+    userv = sample_user.userprofile.analysis
+    season = userv.season_vector
+    mbti = userv.mbti_vector
+    gender = userv.gender_vector
+    age = userv.age_vector
+    style = userv.style_vector
+
+    user_vector = build_final_user_vector(season, mbti, gender, age, style)
     if not user_vector:
         print("❌ 대표 유저의 벡터가 없습니다.")
         return False
@@ -244,7 +248,7 @@ def train_recommend_model(request):
     )
 
     # (7) 모델 저장
-    model.save("myapp/recommend/saved_model.h5")
+    model.save("travel/recommend/saved_model.h5")
 
     print("✅ 추천 모델 학습 완료! saved_model.h5 저장됨")
     return True

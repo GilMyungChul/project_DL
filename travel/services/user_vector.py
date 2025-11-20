@@ -66,18 +66,30 @@ def mbti_to_vector(mbti):
         100 if "P" in mbti else 0,
     ]
 
+# =============== 계절 벡터 =====================
+def season_to_vector(season):
+    seasons = ["봄", "여름", "가을", "겨울"]
+
+    vector = []
+    for se in season:
+        vector.append(100 if se in seasons else 0)
+
+    return vector
+
 
 def build_user_vector(dataDic):
     v_gender = gender_to_vector(dataDic["gender"])
     v_age = age_range_to_vector(dataDic["age_range"])
     v_style = style_to_vector(dataDic["travel_style"])
     v_mbti = mbti_to_vector(dataDic["mbti"])
+    v_season = season_to_vector(dataDic["season"])
 
     analysis = ({
         "gender" : v_gender,
         "age" : v_age,
         "style" : v_style,
-        "mbti" : v_mbti
+        "mbti" : v_mbti,
+        "season" : v_season,
     })
 
     return analysis

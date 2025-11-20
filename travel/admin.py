@@ -629,6 +629,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         "country",
         "languages",
         "travel_style",
+        "seasons",
         "budget",
         "smoking",
         "drinking",
@@ -638,6 +639,6 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(UserAnalysis)
 class UserAnalysisAdmin(admin.ModelAdmin):
-    list_display = ("user_profile", "gender_vector", "age_vector", "style_vector", "mbti_vector")
-    search_fields = ("user_profile", "gender_vector", "age_vector", "style_vector", "mbti_vector")
+    list_display = ("user_profile", "season_vector", "gender_vector", "age_vector", "style_vector", "mbti_vector")
+    search_fields = ("user_profile", "season_vector", "gender_vector", "age_vector", "style_vector", "mbti_vector")
     

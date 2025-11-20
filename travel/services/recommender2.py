@@ -5,6 +5,9 @@ from datetime import date, datetime, timedelta
 from numpy import dot
 from numpy.linalg import norm
 
+from travel.recommend.predict import predict_score 
+from travel.recommend.train import build_place_vector
+
 
 # 장소 테마에 맞게 사용자 성향 및 선택 테마를 변경
 PLACE_THEME_LIST = [
@@ -136,6 +139,14 @@ def build_normalized_season_vector(start_date, end_date):
 
     return season_vector, total_days
 
+# 사용자 성향 및 선택의 계절 벡터 머지
+def merge_season_vectors(pref_v, select_v):
+
+    merged = []
+    for p, s in zip(pref_v, select_v):
+        merged.append(p + s)  # 같은 테마 겹치면 200점으로 강화
+
+    return merged
 
 # 사용자 성향 및 선택의 테마 벡터 머지
 def merge_theme_vectors(pref_v, select_v):
@@ -153,8 +164,8 @@ def merge_theme_vectors(pref_v, select_v):
 def build_final_user_vector(
         season_v,          # [4]
         mbti_v,            # [8]
-        partner_v,         # [4]
-        age_v,             # [4]
+        gender_v,          # [2]
+        age_v,             # [3]
         theme_v            # [5]
     ):
     """
@@ -169,10 +180,10 @@ def build_final_user_vector(
     # 2) MBTI (8)
     user_vector += mbti_v
 
-    # 3) 동반자 (4)
-    user_vector += partner_v
+    # 3) 성별 (2)
+    user_vector += gender_v
 
-    # 4) 나이 (4)
+    # 4) 나이 (3)
     user_vector += age_v
 
     # 5) 테마 (5)
@@ -181,48 +192,25 @@ def build_final_user_vector(
     return user_vector
 
 
-def place_theme_to_vector(theme_str):
-    if not theme_str:
-        return [0, 0, 0, 0, 0]
 
-    theme_str = theme_str.replace(" ", "")
+def place_category_split(places, user_vector, category):
+    results = []
 
-    vector = []
+    cate_places = places.filter(category=category)
+    # (3) 각 장소에 대해 딥러닝 모델로 추천 점수 계산
+    for place in cate_places:
+        analysis = place.analyses.first()
+        if not analysis:
+            continue
 
-    for theme in PLACE_THEME_LIST:
-        keywords = THEME_KEYWORDS[theme]
-        matched = any(k in theme_str for k in keywords)
-        vector.append(100 if matched else 0)
+        place_vector = build_place_vector(analysis)
 
-    return vector
+        score = predict_score(user_vector, place_vector)  # ← 딥러닝 예측!
 
+        results.append({
+            "place": place,
+            "score": score
+        })
+    
+    return results
 
-# 장소 대한 벡터 합치기
-def build_place_vector(ana):
-
-    vector = []
-
-    # 1) 계절 (4)
-    vector += [ana.season_spring, ana.season_summer,
-               ana.season_autumn, ana.season_winter]
-
-    # 2) MBTI (8)
-    vector += [ana.mbti_E, ana.mbti_I, ana.mbti_S, ana.mbti_N,
-               ana.mbti_T, ana.mbti_F, ana.mbti_J, ana.mbti_P]
-
-    # 3) 동반자 (4)
-    vector += [ana.group_couple, ana.group_friends,
-               ana.group_family, ana.group_solo]
-
-    # 4) 나이대 (3)
-    vector += [ana.age_20s, ana.age_30s, ana.age_40s]
-
-    # 5) 테마 (문자열 → 벡터로 변환) (5)
-    theme_v = place_theme_to_vector(ana.themes_csv)
-    vector += theme_v
-
-    return vector
-
-
-def cosine_similarity(v1, v2):
-    return dot(v1, v2) / (norm(v1) * norm(v2) + 1e-8)
