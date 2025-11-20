@@ -2,10 +2,14 @@ from django.urls import path, register_converter
 from django.contrib.auth import views as auth_views
 from travel import views
 from django.shortcuts import render
+from .views_admin import train_recommend_model_view
 
 app_name = "travel"
 
 urlpatterns = [
+
+    # 관리자 전용 -> MLP 모델 학습하기
+    path('train-recommend-model/', train_recommend_model_view, name="train_mlp"),
 
     # 여행 목록
     # path("list/", views.travel_list, name="travel_list"),

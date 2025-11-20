@@ -70,6 +70,7 @@ from .services.recommender2 import (
     cosine_similarity,
 )
 from .services.user_vector import build_user_vector
+from .recommend.train import auto_label_top_bottom 
 
 import logging
 logger = logging.getLogger('travelAgent')
@@ -1504,7 +1505,7 @@ def travel_list_new(request):
         partner = request.POST.get("partner")
         themes = request.POST.getlist("tema")
 
-        season_v = build_normalized_season_vector(startDate, endDate)
+        season_v, total_days = build_normalized_season_vector(startDate, endDate)
         partner_v = companion_to_vector(partner)
         themes_v = theme_to_vector(themes)
 
@@ -1518,12 +1519,6 @@ def travel_list_new(request):
         gender_v = userAn.gender_vector
 
         final_thema = merge_theme_vectors(style_v, themes_v)
-
-        # print(f"사용자 계절 벡터 =============== {season_v}")
-        # print(f"사용자 mbti 벡터 =============== {mbti_v}")
-        # print(f"사용자 동반자 벡터 =============== {partner_v}")
-        # print(f"사용자 나이 벡터 =============== {age_v}")
-        # print(f"사용자 테마 벡터 =============== {final_thema}")
          
         user_vector = build_final_user_vector(season_v, mbti_v, partner_v, age_v, final_thema)
         # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- E
@@ -1535,66 +1530,71 @@ def travel_list_new(request):
         # 장소 + 장소 성격 데이터 가져오기
         places = Place.objects.filter(city_gu__in=areas).prefetch_related(Prefetch("analyses"))
 
-        
-        # 액티비티
-        attractions = places.filter(category="attractions")
-        attractions_results = []
+        return render(request, "select.html")
+        # # 액티비티
+        # attractions = places.filter(category="attractions")
+        # attractions_results = []
 
-        for place in attractions:
-            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
-            if not ana:
-                continue
+        # for place in attractions:
+        #     ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
+        #     if not ana:
+        #         continue
 
-            place_vector = build_place_vector(ana)
-            score = cosine_similarity(user_vector, place_vector)
-            attractions_results.append((place, score))
-
-
-        # 숙소
-        accommodations = places.filter(category="accommodations")
-        accommodations_results = []
-
-        for place in accommodations:
-            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
-            if not ana:
-                continue
-
-            place_vector = build_place_vector(ana)
-            score = cosine_similarity(user_vector, place_vector)
-            accommodations_results.append((place, score))
+        #     place_vector = build_place_vector(ana)
+        #     score = cosine_similarity(user_vector, place_vector)
+        #     attractions_results.append((place, score))
 
 
-        # 음식점
-        restaurants = places.filter(category="restaurants")
-        restaurants_results = []
+        # # 숙소
+        # accommodations = places.filter(category="accommodations")
+        # accommodations_results = []
 
-        for place in restaurants:
-            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
-            if not ana:
-                continue
+        # for place in accommodations:
+        #     ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
+        #     if not ana:
+        #         continue
 
-            place_vector = build_place_vector(ana)
-            score = cosine_similarity(user_vector, place_vector)
-            restaurants_results.append((place, score))
+        #     place_vector = build_place_vector(ana)
+        #     score = cosine_similarity(user_vector, place_vector)
+        #     accommodations_results.append((place, score))
 
-        # 액티비티 상위 10개
-        attractions_results.sort(key=lambda x: x[1], reverse=True)
-        # att_top10 = attractions_results[:10]
-        att_top10 = [p for p, s in attractions_results[:10]]
 
-        # 음식점 상위 10개
-        restaurants_results.sort(key=lambda x: x[1], reverse=True)
-        res_top10 = [p for p, s in restaurants_results[:10]]
+        # # 음식점
+        # restaurants = places.filter(category="restaurants")
+        # restaurants_results = []
 
-        # 숙소 상위 10개
-        accommodations_results.sort(key=lambda x: x[1], reverse=True)        
-        acc_top10 = [p for p, s in accommodations_results[:10]]
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- E
+        # for place in restaurants:
+        #     ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
+        #     if not ana:
+        #         continue
 
-        return render(request, "travel/select_places.html", {
-            "top_act" : att_top10,
-            "top_res" : res_top10,
-            "top_acc" : acc_top10,
-            "startDate" : startDate,
-            "endDate" : endDate,
-        })
+        #     place_vector = build_place_vector(ana)
+        #     score = cosine_similarity(user_vector, place_vector)
+        #     restaurants_results.append((place, score))
+
+        # # 액티비티 상위 10개
+        # attractions_results.sort(key=lambda x: x[1], reverse=True)
+        # # att_top10 = attractions_results[:10]
+        # att_top10 = [p for p, s in attractions_results[:10]]
+
+        # # 음식점 상위 10개
+        # restaurants_results.sort(key=lambda x: x[1], reverse=True)
+        # res_top10 = [p for p, s in restaurants_results[:10]]
+
+        # # 숙소 상위 10개
+        # accommodations_results.sort(key=lambda x: x[1], reverse=True)        
+        # acc_top10 = [p for p, s in accommodations_results[:10]]
+        # # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- E
+
+        # area_str = ", ".join(areas)
+        # days_list = list(range(total_days))
+
+        # return render(request, "travel/select_places.html", {
+        #     "top_act" : att_top10,
+        #     "top_res" : res_top10,
+        #     "top_acc" : acc_top10,
+        #     "days_list" : days_list,
+        #     "startDate" : startDate,
+        #     "endDate" : endDate,
+        #     "areas" : area_str,
+        # })

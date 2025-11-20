@@ -134,7 +134,7 @@ def build_normalized_season_vector(start_date, end_date):
         ratio = season_count[season] / total_days  # 비율 (0~1)
         season_vector.append(int(ratio * 100))     # 0~100 스케일
 
-    return season_vector
+    return season_vector, total_days
 
 
 # 사용자 성향 및 선택의 테마 벡터 머지
@@ -220,12 +220,6 @@ def build_place_vector(ana):
     # 5) 테마 (문자열 → 벡터로 변환) (5)
     theme_v = place_theme_to_vector(ana.themes_csv)
     vector += theme_v
-
-    # print(f"장소 계절 벡터 =============== {[ana.season_spring, ana.season_summer, ana.season_autumn, ana.season_winter]}")
-    # print(f"장소 mbti 벡터 =============== {[ana.mbti_E, ana.mbti_I, ana.mbti_S, ana.mbti_N, ana.mbti_T, ana.mbti_F, ana.mbti_J, ana.mbti_P]}")
-    # print(f"장소 동반자 벡터 =============== {[ana.group_couple, ana.group_friends, ana.group_family, ana.group_solo]}")
-    # print(f"장소 나이 벡터 =============== {[ana.age_20s, ana.age_30s, ana.age_40s]}")
-    # print(f"장소 테마 벡터 =============== {theme_v}")
 
     return vector
 
