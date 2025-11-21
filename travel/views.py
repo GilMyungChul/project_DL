@@ -71,7 +71,7 @@ from .services.recommender2 import (
 )
 from .services.user_vector import build_user_vector
 from .recommend.train import auto_label_top_bottom , build_final_user_vector
-from .recommend.schedule import generate_itinerary
+from travel.recommend.schedule import generate_itinerary_pattern
 
 import logging
 logger = logging.getLogger('travelAgent')
@@ -1547,26 +1547,32 @@ def travel_list_new(request):
         acc_result.sort(key=lambda x: x["score"], reverse=True)
         res_result.sort(key=lambda x: x["score"], reverse=True)
 
-        # (5) 상위 N개 반환
+        # 상위 N개 반환
         act_top_n = act_result[:10]
         acc_top_n = acc_result[:10]
         res_top_n = res_result[:10]
-
-        # 하나의 리스트로 합치기
-        merged_top_places = act_top_n + acc_top_n + res_top_n
-
-        # Place 객체만 빼기
-        merged_places = [item["place"] for item in merged_top_places]
+        
 
         # 일정 생성
-        itinerary = generate_itinerary(merged_places, total_days+1)
+        itinerary = generate_itinerary_pattern(
+            act_top_n,
+            res_top_n,
+            acc_top_n,
+            total_days
+        )
 
-        return JsonResponse({
-            "attractions": serialize_recommend_result(act_top_n),
-            "accommodations": serialize_recommend_result(acc_top_n),
-            "restaurants": serialize_recommend_result(res_top_n),
-            "itinerary": itinerary,  # 이미 dict라서 문제 없음
-        })
+        context = {
+            "itinerary": itinerary,
+            "total_days": total_days,
+            "mapbox_key": "pk.eyJ1IjoiZ2lsbXl1bmdjaHVsIiwiYSI6ImNtaThpMHZ1ZDBiemMya3EweTBneXFwNHoifQ.TBqUe-llk3r__orsqkG7aA"  # 여기에 발급받은 키
+        }
+
+        return render(request, "travel/travel_plan.html", context)
+
+
+def extract_places(top_list, limit):
+    """place_category_split 결과에서 Place 객체만 뽑아오는 헬퍼"""
+    return [item["place"] for item in top_list[:limit]]
 
 
 def serialize_recommend_result(result_list):

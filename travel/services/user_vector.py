@@ -71,8 +71,8 @@ def season_to_vector(season):
     seasons = ["봄", "여름", "가을", "겨울"]
 
     vector = []
-    for se in season:
-        vector.append(100 if se in seasons else 0)
+    for se in seasons:
+        vector.append(100 if se in season else 0)
 
     return vector
 
