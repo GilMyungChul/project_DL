@@ -110,5 +110,5 @@ a {text-decoration: none; color: #333;}
     font-size: 13px;
 }
 
-.travel-style-item {display: flex; justify-content: space-between; margin-top: 5px;}
+.travel-style-item {display: flex; justify-content: space-between; margin-top: 5px; padding:10px;}
 .travel-style-item div input{width: auto;}

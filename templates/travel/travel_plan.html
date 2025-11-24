@@ -1,0 +1,52 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+
+    <title>여행 일정 지도 (Mapbox)</title>
+
+    <!-- Mapbox CSS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+
+<body>
+
+<div class="map-container">
+
+    <aside class="sidebar">
+        <h2>여행 일정</h2>
+        <ul id="dayTabs">
+            {% for day_key in itinerary.keys %}
+            <li data-day="{{ day_key }}" class="day-tab {% if forloop.first %}active{% endif %}">
+                {{ forloop.counter }}일차
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div id="scheduleList" class="schedule-box"></div>
+    </aside>
+
+    <div id="map"></div>
+
+</div>
+
+<!-- itinerary JSON 데이터 -->
+{{ itinerary|json_script:"itinerary-data" }}
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Mapbox JS -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
+
+<script>
+    const MAPBOX_KEY = "{{ mapbox_key }}";
+</script>
+
+<script src="{% static 'js/travel_plan.js' %}"></script>
+
+</body>
+</html>

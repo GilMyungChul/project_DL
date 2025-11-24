@@ -65,11 +65,13 @@ from .services.recommender2 import (
     theme_to_vector,
     build_normalized_season_vector,
     merge_theme_vectors,
-    build_final_user_vector,
+    merge_season_vectors,
     build_place_vector,
-    cosine_similarity,
+    place_category_split,
 )
 from .services.user_vector import build_user_vector
+from .recommend.train import auto_label_top_bottom , build_final_user_vector
+from travel.recommend.schedule import generate_itinerary_pattern
 
 import logging
 logger = logging.getLogger('travelAgent')
@@ -1085,6 +1087,8 @@ def signup_view(request):
         bio = request.POST.get("bio")
         mbti = request.POST.get("mbti")
 
+        seasons = request.POST.getlist("season_chk")
+
         # 1. username 중복 체크
         if User.objects.filter(username=userid).exists():
             return render(request, f"{userid}", {"error": "이미 가입된 아이디입니다.."})
@@ -1116,6 +1120,7 @@ def signup_view(request):
                 profile.sns = sns
                 profile.bio = bio
                 profile.mbti = mbti
+                profile.seasons = seasons
                 
                 profile.save() # UserProfile 객체 저장
 
@@ -1125,12 +1130,14 @@ def signup_view(request):
                     "gender": gender,
                     "age_range": age_range,
                     "travel_style": travel_style,
-                    "mbti": mbti
+                    "mbti": mbti,
+                    "season": seasons,
                 })
 
                 # 6) UserAnalysis 생성 또는 연결
                 UserAnalysis.objects.create(
                     user_profile=profile,
+                    season_vector=user_vector.get("season"),
                     gender_vector=user_vector.get("gender"),
                     age_vector=user_vector.get("age"),
                     style_vector=user_vector.get("style"),
@@ -1497,15 +1504,14 @@ def matching(request):
 def travel_list_new(request):
     if request.method == 'POST':
         
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- S
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------- S
         startDate = request.POST.get("start_date")
         endDate = request.POST.get("end_date")
         travel = request.POST.getlist("travel_gu")
         partner = request.POST.get("partner")
         themes = request.POST.getlist("tema")
 
-        season_v = build_normalized_season_vector(startDate, endDate)
-        partner_v = companion_to_vector(partner)
+        select_season_v, total_days = build_normalized_season_vector(startDate, endDate)
         themes_v = theme_to_vector(themes)
 
         # 사용자 성향 벡터 가져오기
@@ -1513,88 +1519,71 @@ def travel_list_new(request):
         # print(f"userAn ============== {userAn}")
 
         mbti_v = userAn.mbti_vector
-        style_v = userAn.style_vector
+        select_style_v = userAn.style_vector
         age_v = userAn.age_vector
         gender_v = userAn.gender_vector
+        user_seasons_v = userAn.season_vector
 
-        final_thema = merge_theme_vectors(style_v, themes_v)
-
-        # print(f"사용자 계절 벡터 =============== {season_v}")
-        # print(f"사용자 mbti 벡터 =============== {mbti_v}")
-        # print(f"사용자 동반자 벡터 =============== {partner_v}")
-        # print(f"사용자 나이 벡터 =============== {age_v}")
-        # print(f"사용자 테마 벡터 =============== {final_thema}")
+        style_v = merge_theme_vectors(select_style_v, themes_v)
+        season_v = merge_season_vectors(user_seasons_v, select_season_v)
          
-        user_vector = build_final_user_vector(season_v, mbti_v, partner_v, age_v, final_thema)
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- E
+        user_vector = build_final_user_vector(season_v, mbti_v, gender_v, age_v, style_v)
+        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------- E
 
 
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- S
+        # ✨ 선택된 장소의 벡터 ✨ ------------------------------------------------------------------------------------- S
         areas = [AREA_LABELS.get(a.lower(), a) for a in travel]
 
         # 장소 + 장소 성격 데이터 가져오기
         places = Place.objects.filter(city_gu__in=areas).prefetch_related(Prefetch("analyses"))
 
+        act_result = place_category_split(places, user_vector, "attractions")
+        acc_result = place_category_split(places, user_vector, "accommodations")
+        res_result = place_category_split(places, user_vector, "restaurants")
+
+        # ✨ 선택된 장소의 벡터 ✨ ------------------------------------------------------------------------------------- E
+
+        act_result.sort(key=lambda x: x["score"], reverse=True)
+        acc_result.sort(key=lambda x: x["score"], reverse=True)
+        res_result.sort(key=lambda x: x["score"], reverse=True)
+
+        # 상위 N개 반환
+        act_top_n = act_result[:10]
+        acc_top_n = acc_result[:10]
+        res_top_n = res_result[:10]
         
-        # 액티비티
-        attractions = places.filter(category="attractions")
-        attractions_results = []
 
-        for place in attractions:
-            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
-            if not ana:
-                continue
+        # 일정 생성
+        itinerary = generate_itinerary_pattern(
+            act_top_n,
+            res_top_n,
+            acc_top_n,
+            total_days
+        )
 
-            place_vector = build_place_vector(ana)
-            score = cosine_similarity(user_vector, place_vector)
-            attractions_results.append((place, score))
+        context = {
+            "itinerary": itinerary,
+            "total_days": total_days,
+            "mapbox_key": "pk.eyJ1IjoiZ2lsbXl1bmdjaHVsIiwiYSI6ImNtaThpMHZ1ZDBiemMya3EweTBneXFwNHoifQ.TBqUe-llk3r__orsqkG7aA"  # 여기에 발급받은 키
+        }
 
-
-        # 숙소
-        accommodations = places.filter(category="accommodations")
-        accommodations_results = []
-
-        for place in accommodations:
-            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
-            if not ana:
-                continue
-
-            place_vector = build_place_vector(ana)
-            score = cosine_similarity(user_vector, place_vector)
-            accommodations_results.append((place, score))
+        return render(request, "travel/travel_plan.html", context)
 
 
-        # 음식점
-        restaurants = places.filter(category="restaurants")
-        restaurants_results = []
+def extract_places(top_list, limit):
+    """place_category_split 결과에서 Place 객체만 뽑아오는 헬퍼"""
+    return [item["place"] for item in top_list[:limit]]
 
-        for place in restaurants:
-            ana = place.analyses.first()     # PlaceAnalysis 1개 가져오기
-            if not ana:
-                continue
 
-            place_vector = build_place_vector(ana)
-            score = cosine_similarity(user_vector, place_vector)
-            restaurants_results.append((place, score))
-
-        # 액티비티 상위 10개
-        attractions_results.sort(key=lambda x: x[1], reverse=True)
-        # att_top10 = attractions_results[:10]
-        att_top10 = [p for p, s in attractions_results[:10]]
-
-        # 음식점 상위 10개
-        restaurants_results.sort(key=lambda x: x[1], reverse=True)
-        res_top10 = [p for p, s in restaurants_results[:10]]
-
-        # 숙소 상위 10개
-        accommodations_results.sort(key=lambda x: x[1], reverse=True)        
-        acc_top10 = [p for p, s in accommodations_results[:10]]
-        # ✨ 사용자 성향 및 선택에 대한 벡터 ✨ ------------------------------------------------------------------------------------- E
-
-        return render(request, "travel/select_places.html", {
-            "top_act" : att_top10,
-            "top_res" : res_top10,
-            "top_acc" : acc_top10,
-            "startDate" : startDate,
-            "endDate" : endDate,
+def serialize_recommend_result(result_list):
+    serialized = []
+    for item in result_list:
+        place = item["place"]
+        serialized.append({
+            "id": place.id,
+            "name": place.name,
+            "lat": float(place.lat) if place.lat else None,
+            "lng": float(place.lon) if place.lon else None,
+            "score": item["score"]
         })
+    return serialized
